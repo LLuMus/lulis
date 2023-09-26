@@ -1,0 +1,51 @@
+name: Building and Push to Docker Hub
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  APP_IMAGE: lulis:${{ github.sha }}
+
+jobs:
+  build-and-push:
+    name: Building and Push Image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.21
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.21
+
+      - uses: actions/checkout@master
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Test
+        run: go test ./...
+
+      - name: Install doctl
+        if: github.ref == 'refs/heads/main'
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry
+        if: github.ref == 'refs/heads/main'
+        run: doctl registry login --expiry-seconds 600
+
+      - name: Tag image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -f Dockerfile \
+            -t $APP_IMAGE \
+            -t registry.digitalocean.com/wallet-passes/$APP_IMAGE .
+
+      - name: Push image to DO Container Registry
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker push registry.digitalocean.com/wallet-passes/$APP_IMAGE
