@@ -56,13 +56,14 @@ func (s *Stream) StartStream() error {
 		"-safe", "0",
 		"-i", s.playlistPath,
 		"-pix_fmt", "yuv420p",
-		"-x264-params", "keyint=48:min-keyint=48:scenecut=-1",
-		"-b:v", "4500k",
+		"-x264-params", "keyint=48:min-keyint=48:scenecut=-1:nal-hrd=cbr",
+		"-bufsize", "3500k",
+		"-b:v", "3500k",
 		"-b:a", "128k",
 		"-ar", "44100",
 		"-acodec", "aac",
 		"-vcodec", "libx264",
-		"-preset", "faster",
+		"-preset", "superfast",
 		"-f", "flv",
 		"rtmp://live.twitch.tv/app/"+s.twitchStreamKey)
 
