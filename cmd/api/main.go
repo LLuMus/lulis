@@ -170,6 +170,10 @@ func main() {
 		if strings.HasPrefix(message.Message, "Lula, ") {
 			log.Infof("Message to the queue: %s", message.Message)
 			msgQueue.Enqueue(message.Message + " - " + message.User.Name)
+			client.Say(message.Channel, "We are processing your request "+message.User.Name+", please wait a minute or two.")
+		} else {
+			log.Infof("Message not for me: %s", message.Message)
+			client.Say(message.Channel, "To talk to Lula, a message have to start with 'Lula, '")
 		}
 	})
 
