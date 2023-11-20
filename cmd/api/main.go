@@ -75,11 +75,25 @@ func main() {
 	stream := ffmpeg.NewStream(twitchStreamKey, filepath.Join(basePath, "tmp", "playlist.txt"))
 	mixer := replicate.NewMixer(replicateKey, awsBaseUrl, faceVideoUrl, http.DefaultClient, fs)
 
+	// Create a server instance
+	server := &http.Server{Addr: ":" + port}
+	http.HandleFunc("/", healthCheckHandler)
+
 	go func() {
-		http.HandleFunc("/", healthCheckHandler)
 		fmt.Println("Server is running on port " + port)
-		http.ListenAndServe(":"+port, nil)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("ListenAndServe error: %v\n", err)
+		}
 	}()
+
+	// Schedule a server shutdown after 30 minutes to give change for a new instance come up fresh
+	// It seems that CPU usage is high when the server is running for a long time 🔥this is fine🔥
+	time.AfterFunc(30*time.Minute, func() {
+		fmt.Println("Shutting down server...")
+		if err := server.Shutdown(context.Background()); err != nil {
+			fmt.Printf("Server Shutdown Failed:%+v", err)
+		}
+	})
 
 	go func() {
 		log.Println("Starting stream...")
