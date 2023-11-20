@@ -64,6 +64,7 @@ func (s *Stream) StartStream() error {
 		"-vcodec", "libx264",
 		"-c:a", "copy",
 		"-preset", "veryfast",
+		"-tune", "zerolatency",
 		"-r", "24",
 		"-g", "48",
 		"-f", "flv",
