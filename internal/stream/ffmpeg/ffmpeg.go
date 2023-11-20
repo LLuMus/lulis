@@ -65,7 +65,8 @@ func (s *Stream) StartStream() error {
 		"-vcodec", "libx264",
 		"-preset", "ultrafast",
 		"-tune", "zerolatency",
-		"-r", "25",
+		"-threads", "2",
+		"-r", "24",
 		"-f", "flv",
 		"rtmp://live.twitch.tv/app/"+s.twitchStreamKey)
 
