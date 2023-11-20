@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -14,14 +16,16 @@ import (
 )
 
 type FileSystem struct {
-	awsBucket string
-	basePath  string
+	awsBucket    string
+	basePath     string
+	maxFileSlots int
 }
 
-func NewFileSystem(awsBucket string, basePath string) *FileSystem {
+func NewFileSystem(awsBucket string, basePath string, maxFileSlots int) *FileSystem {
 	return &FileSystem{
-		awsBucket: awsBucket,
-		basePath:  basePath,
+		awsBucket:    awsBucket,
+		basePath:     basePath,
+		maxFileSlots: maxFileSlots,
 	}
 }
 
@@ -88,7 +92,9 @@ func (s *FileSystem) DownloadVideoUrl(videoUrl string) (string, error) {
 	}
 	defer result.Body.Close()
 
-	finalPath := filepath.Join(s.basePath, "tmp", "latest.mp4")
+	// Generate a random number from 0 to maxFileSlots-1
+	random := strconv.Itoa(rand.Intn(s.maxFileSlots))
+	finalPath := filepath.Join(s.basePath, "tmp", "latest"+random+".mp4")
 
 	f, err := os.Create(finalPath)
 	if err != nil {

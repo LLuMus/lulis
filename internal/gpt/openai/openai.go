@@ -22,7 +22,7 @@ func NewOpenAI(apiKey string) *OpenAI {
 
 func (o *OpenAI) GenerateResponse(ctx context.Context, question string) (string, error) {
 	res, err := o.client.Send(ctx, &chatgpt.ChatCompletionRequest{
-		Model: chatgpt.GPT35Turbo,
+		Model: chatgpt.GPT4,
 		Messages: []chatgpt.ChatMessage{
 			{
 				Role:    "system",

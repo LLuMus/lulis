@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v4"
@@ -50,10 +52,32 @@ var bannedWords = []string{
 }
 
 // healthCheckHandler is a simple HTTP handler function which writes a response used for cloud deploys
-func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	// Send an 'OK' response with HTTP 200 status code
-	fmt.Fprintf(w, "OK")
+func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
+	_, _ = fmt.Fprintf(w, "OK")
 }
+
+// slotCount is a knob to control the number of files in the tmp folder and cache size for the workload
+const slotCount = 128
+
+// autoPlayInterval is a knob to control the interval between automatic video plays
+const autoPlayInterval = 5 * time.Minute
+
+// autoPlayRecurrentInterval is a knob to control the interval between automatic video plays
+const autoPlayRecurrentInterval = 2 * time.Minute
+
+// queuesThroughput is a knob to control the throughput of the queues, careful it consumes CPU 🔥
+const queuesThroughput = 2 * time.Second
+
+var (
+	// mutex for thread-safe access to playedVideos
+	mutex sync.Mutex
+
+	// playedVideos to keep track of played videos
+	playedVideos []string = make([]string, 0, slotCount)
+
+	// messageTimer timer to send a random cached video
+	messageTimer = time.NewTimer(autoPlayInterval)
+)
 
 func main() {
 	var port = os.Getenv("PORT")
@@ -70,7 +94,7 @@ func main() {
 	var faceVideoUrl = os.Getenv("FACE_VIDEO_URL")
 
 	gpt := openai.NewOpenAI(openAiKey)
-	fs := s3.NewFileSystem(awsBucket, basePath)
+	fs := s3.NewFileSystem(awsBucket, basePath, slotCount)
 	tts := elevenlabs.NewElevenLabs(elevenLabsKey, basePath, elevenLabsVoiceId, http.DefaultClient, fs)
 	stream := ffmpeg.NewStream(twitchStreamKey, filepath.Join(basePath, "tmp", "playlist.txt"))
 	mixer := replicate.NewMixer(replicateKey, awsBaseUrl, faceVideoUrl, http.DefaultClient, fs)
@@ -95,7 +119,7 @@ func main() {
 		for err != nil {
 			log.Println("Error starting stream:", err)
 			err = stream.StartStream()
-			time.Sleep(5 * time.Second)
+			time.Sleep(queuesThroughput)
 		}
 	}()
 
@@ -111,11 +135,14 @@ func main() {
 					log.Errorf("Error switching video: %v", err)
 					continue
 				}
+
+				addPlayedVideo(video)
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(queuesThroughput)
 		}
 	}()
 
+	client := twitch.NewClient(twitchChannelName, twitchClientId)
 	msgQueue := memory.NewQueue()
 	go func() {
 		ctx := context.Background()
@@ -152,6 +179,8 @@ func main() {
 					continue
 				}
 
+				client.Say(twitchChannelName, "Almost ready...")
+
 				log.Infof("Generated audio: %s", fsKey)
 				log.Infof("Generating lip sync for: %s", answer)
 
@@ -161,17 +190,34 @@ func main() {
 					continue
 				}
 
+				client.Say(twitchChannelName, "Anytime now...")
+
 				log.Infof("Generated video: %s", videoLocalPath)
 				log.Infof("Sending video to queue: %s", videoLocalPath)
 
 				videoQueue.Enqueue(videoLocalPath)
+				messageTimer.Reset(autoPlayInterval)
 			}
 
-			time.Sleep(2 * time.Second)
+			time.Sleep(queuesThroughput)
 		}
 	}()
 
-	client := twitch.NewClient(twitchChannelName, twitchClientId)
+	go func() {
+		for {
+			select {
+			case <-messageTimer.C:
+				// Timer expired, send a random cached video
+				if len(playedVideos) > 0 {
+					randomIndex := rand.Intn(len(playedVideos))
+					randomVideo := playedVideos[randomIndex]
+					videoQueue.Enqueue(randomVideo)
+				}
+				messageTimer.Reset(autoPlayRecurrentInterval)
+			}
+		}
+	}()
+
 	client.Join(twitchChannelName)
 	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
 		log.Infof("Message received: %s", message.Message)
@@ -189,4 +235,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// addPlayedVideo to add a video to the playedVideos slice
+func addPlayedVideo(videoPath string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Check if we need to remove the oldest video
+	if len(playedVideos) >= 128 {
+		playedVideos = playedVideos[1:]
+	}
+
+	playedVideos = append(playedVideos, videoPath)
 }

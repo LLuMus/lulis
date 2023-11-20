@@ -17,7 +17,7 @@ const (
 	apiUrl       = "https://api.replicate.com/v1/predictions"
 	version      = "8d65e3f4f4298520e079198b493c25adfc43c058ffec924f2aefc8010ed25eef"
 	pollInterval = 3 * time.Second
-	timeout      = 60 * time.Second
+	timeout      = 90 * time.Second
 )
 
 var log = logrus.New()
