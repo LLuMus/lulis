@@ -62,9 +62,11 @@ func (s *Stream) StartStream() error {
 		"-b:a", "128k",
 		"-ar", "44100",
 		"-vcodec", "libx264",
+		"-profile:v", "baseline", // Set H.264 profile to baseline
 		"-c:a", "copy",
 		"-preset", "ultrafast",
 		"-tune", "zerolatency",
+		"-map_metadata", "-1", // Strip unnecessary metadata
 		"-r", "24",
 		"-g", "48",
 		"-f", "flv",
