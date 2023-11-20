@@ -55,9 +55,18 @@ func (s *Stream) StartStream() error {
 		"-f", "concat",
 		"-safe", "0",
 		"-i", s.playlistPath,
+		"-vf", "scale=1280:720",
+		"-pix_fmt", "yuv420p",
 		"-bufsize", "2000k",
-		"-c:v", "copy", // Directly copy the video stream
-		"-c:a", "copy", // Directly copy the audio stream
+		"-b:v", "2000k",
+		"-b:a", "128k",
+		"-ar", "44100",
+		"-vcodec", "libx264",
+		"-c:a", "copy",
+		"-preset", "ultrafast",
+		"-tune", "zerolatency",
+		"-r", "24",
+		"-g", "48",
 		"-f", "flv",
 		"rtmp://live.twitch.tv/app/"+s.twitchStreamKey)
 
