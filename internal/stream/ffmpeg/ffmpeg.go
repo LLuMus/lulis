@@ -63,7 +63,7 @@ func (s *Stream) StartStream() error {
 		"-ar", "44100",
 		"-vcodec", "libx264",
 		"-c:a", "copy",
-		"-preset", "veryfast",
+		"-preset", "ultrafast",
 		"-tune", "zerolatency",
 		"-r", "24",
 		"-g", "48",
