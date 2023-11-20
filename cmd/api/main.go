@@ -86,15 +86,6 @@ func main() {
 		}
 	}()
 
-	// Schedule a server shutdown after 30 minutes to give change for a new instance come up fresh
-	// It seems that CPU usage is high when the server is running for a long time 🔥this is fine🔥
-	time.AfterFunc(30*time.Minute, func() {
-		fmt.Println("Shutting down server...")
-		if err := server.Shutdown(context.Background()); err != nil {
-			fmt.Printf("Server Shutdown Failed:%+v", err)
-		}
-	})
-
 	go func() {
 		log.Println("Starting stream...")
 		err := stream.StartStream()
@@ -121,6 +112,7 @@ func main() {
 					continue
 				}
 			}
+			time.Sleep(2 * time.Second)
 		}
 	}()
 
@@ -174,6 +166,8 @@ func main() {
 
 				videoQueue.Enqueue(videoLocalPath)
 			}
+
+			time.Sleep(2 * time.Second)
 		}
 	}()
 
