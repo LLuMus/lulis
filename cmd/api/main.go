@@ -41,6 +41,12 @@ const autoPlayRecurrentInterval = 2 * time.Minute
 // queuesThroughput is a knob to control the throughput of the queues, careful it consumes CPU 🔥
 const queuesThroughput = 3 * time.Second
 
+// restartInterval is a knob to control the interval between stream restarts, necessary because of FFMPEG CPU overhead on shared vCPUs
+const restartInterval = 5 * time.Hour
+
+// autoQuestionGenerationInterval is a knob to control the interval between automatic question generation
+const autoQuestionGenerationInterval = 10 * time.Minute
+
 var (
 	// mutex for thread-safe access to playedVideos
 	mutex sync.Mutex
@@ -50,6 +56,12 @@ var (
 
 	// messageTimer timer to send a random cached video
 	messageTimer = time.NewTimer(autoPlayInterval)
+
+	// restartTimer timer to restart the stream
+	restartTimer = time.NewTimer(restartInterval)
+
+	// questionTimer timer to generate a question
+	questionTimer = time.NewTimer(autoQuestionGenerationInterval)
 )
 
 func main() {
@@ -84,14 +96,12 @@ func main() {
 	}()
 
 	go func() {
-		log.Println("Starting stream...")
-		err := stream.StartStream()
-		if err != nil {
-			log.Println("Error starting stream:", err)
-		}
-		for err != nil {
-			log.Println("Error starting stream:", err)
-			err = stream.StartStream()
+		for {
+			log.Println("Starting stream...")
+			err := stream.StartStream()
+			if err != nil {
+				log.Println("Error starting stream:", err)
+			}
 			time.Sleep(queuesThroughput)
 		}
 	}()
@@ -175,11 +185,34 @@ func main() {
 			case <-messageTimer.C:
 				// Timer expired, send a random cached video
 				if len(playedVideos) > 0 {
+					client.Say(twitchChannelName, "Playing a previous question...")
+
 					randomIndex := rand.Intn(len(playedVideos))
 					randomVideo := playedVideos[randomIndex]
 					videoQueue.Enqueue(randomVideo)
 				}
 				messageTimer.Reset(autoPlayRecurrentInterval)
+			case <-restartTimer.C:
+				// Timer expired, restart the stream
+				client.Say(twitchChannelName, "Back in some seconds!")
+				err := stream.StopStream()
+				if err != nil {
+					log.Errorf("Error stopping stream: %v", err)
+				}
+				restartTimer.Reset(restartInterval)
+			case <-questionTimer.C:
+				// Timer expired, generate a question
+				ctx := context.Background()
+				question, err := gpt.GenerateQuestion(ctx)
+				if err != nil {
+					log.Println("Error generating question:", err)
+					continue
+				}
+
+				log.Infof("Generated question: %s", question)
+				client.Say(twitchChannelName, question)
+				msgQueue.Enqueue(question)
+				questionTimer.Reset(autoQuestionGenerationInterval)
 			}
 		}
 	}()

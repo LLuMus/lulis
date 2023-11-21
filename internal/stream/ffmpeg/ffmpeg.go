@@ -90,7 +90,15 @@ func (s *Stream) StartStream() error {
 }
 
 func (s *Stream) StopStream() error {
-	return s.currentCmd.Process.Kill()
+	if s.currentCmd == nil || s.currentCmd.Process == nil {
+		return fmt.Errorf("no stream is currently running")
+	}
+
+	if err := s.currentCmd.Process.Kill(); err != nil {
+		return err
+	}
+
+	return s.currentCmd.Wait()
 }
 
 func (s *Stream) PlayLatest(path string) error {
