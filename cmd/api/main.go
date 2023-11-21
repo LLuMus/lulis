@@ -24,6 +24,13 @@ import (
 var log = logrus.New()
 
 var bannedWords = []string{
+	"ass",
+	"fuck",
+	"suck",
+	"bitch",
+	"crap",
+	"puta",
+	"sex",
 	"learning disability",
 	"learning disabilities",
 	"learning disorder",
@@ -66,7 +73,7 @@ const autoPlayInterval = 5 * time.Minute
 const autoPlayRecurrentInterval = 2 * time.Minute
 
 // queuesThroughput is a knob to control the throughput of the queues, careful it consumes CPU 🔥
-const queuesThroughput = 2 * time.Second
+const queuesThroughput = 3 * time.Second
 
 var (
 	// mutex for thread-safe access to playedVideos
