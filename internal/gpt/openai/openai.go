@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"github.com/ayush6624/go-chatgpt"
+	"math/rand"
 )
 
 type OpenAI struct {
@@ -20,7 +21,55 @@ func NewOpenAI(apiKey string) *OpenAI {
 	}
 }
 
+var randomTopics = []string{
+	"Brasil",
+	"TV",
+	"violência",
+	"política",
+	"educação",
+	"saúde",
+	"emprego",
+	"justiça social",
+	"humor",
+	"democracia",
+	"chimarrão",
+	"churrasco",
+	"Oktoberfest",
+	"Cataratas do Iguaçu",
+	"povo trabalhador",
+	"povo acolhedor",
+	"sotaque",
+	"frio",
+	"praia",
+	"alegria",
+	"esperança",
+	"amor",
+	"paz",
+	"união",
+	"investimento",
+	"políticas públicas",
+	"informação",
+	"debates",
+	"entretenimento",
+	"risadas",
+	"descontração",
+	"oportunidades",
+	"cultura",
+	"arte",
+	"geografia",
+	"história",
+	"ciência",
+	"tecnologia",
+	"música",
+	"literatura",
+	"filosofia",
+	"religião",
+	"esporte",
+	"economia",
+}
+
 func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
+	topic := randomTopics[rand.Intn(len(randomTopics))]
 	res, err := o.client.Send(ctx, &chatgpt.ChatCompletionRequest{
 		Model: chatgpt.GPT4,
 		Messages: []chatgpt.ChatMessage{
@@ -30,7 +79,7 @@ func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
 			},
 			{
 				Role:    "user",
-				Content: "Gere uma pergunta para o Lula",
+				Content: "Gere uma pergunta para o Lula tema Brasil",
 			},
 			{
 				Role:    "assistant",
@@ -38,7 +87,7 @@ func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
 			},
 			{
 				Role:    "user",
-				Content: "Gere outra pergunta para o Lula",
+				Content: "Gere outra pergunta para o Lula tema TV",
 			},
 			{
 				Role:    "assistant",
@@ -46,7 +95,7 @@ func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
 			},
 			{
 				Role:    "user",
-				Content: "Gere outra pergunta para o Lula",
+				Content: "Gere outra pergunta para o Lula tema violência",
 			},
 			{
 				Role:    "assistant",
@@ -54,7 +103,7 @@ func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
 			},
 			{
 				Role:    "user",
-				Content: "Gere outra pergunta para o Lula",
+				Content: "Gere outra pergunta para o Lula política",
 			},
 			{
 				Role:    "assistant",
@@ -62,7 +111,7 @@ func (o *OpenAI) GenerateQuestion(ctx context.Context) (string, error) {
 			},
 			{
 				Role:    "user",
-				Content: "Gere outra pergunta para o Lula",
+				Content: "Gere outra pergunta para o Lula tema " + topic,
 			},
 		},
 	})

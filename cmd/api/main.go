@@ -45,7 +45,7 @@ const queuesThroughput = 3 * time.Second
 const restartInterval = 5 * time.Hour
 
 // autoQuestionGenerationInterval is a knob to control the interval between automatic question generation
-const autoQuestionGenerationInterval = 10 * time.Minute
+const autoQuestionGenerationInterval = 8 * time.Minute
 
 var (
 	// mutex for thread-safe access to playedVideos
@@ -173,6 +173,7 @@ func main() {
 
 				videoQueue.Enqueue(videoLocalPath)
 				messageTimer.Reset(autoPlayInterval)
+				questionTimer.Reset(autoQuestionGenerationInterval)
 			}
 
 			time.Sleep(queuesThroughput)
