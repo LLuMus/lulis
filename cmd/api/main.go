@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/gempir/go-twitch-irc/v4"
 	"github.com/llumus/lulis/internal/fs/s3"
@@ -22,41 +23,6 @@ import (
 )
 
 var log = logrus.New()
-
-var bannedWords = []string{
-	"ass",
-	"fuck",
-	"suck",
-	"bitch",
-	"crap",
-	"puta",
-	"sex",
-	"learning disability",
-	"learning disabilities",
-	"learning disorder",
-	"learning disorders",
-	"learning difficulties",
-	"learning difficulty",
-	"problemas de aprendizagem",
-	"problema de aprendizagem",
-	"transtorno de aprendizagem",
-	"replace",
-	"replaced",
-	"replacing",
-	"replaces",
-	"substitua",
-	"substituir",
-	"substituindo",
-	"\"",
-	"“",
-	"”",
-	"’",
-	"‘",
-	"''",
-	"``",
-	"\\",
-	"!*",
-}
 
 // healthCheckHandler is a simple HTTP handler function which writes a response used for cloud deploys
 func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
@@ -158,16 +124,9 @@ func main() {
 			if ok {
 				log.Debugf("Message from queue: %s", message)
 
-				var bannedWordDetected string
-				for _, word := range bannedWords {
-					if strings.Contains(message, word) {
-						bannedWordDetected = word
-						break
-					}
-				}
-
-				if bannedWordDetected != "" {
-					log.Warnf("Banned word detected: %s", bannedWordDetected)
+				if containsBannedWord(message) {
+					log.Warnf("Banned word detected in message: %s", message)
+					client.Say(twitchChannelName, "Sorry, I can't say that.")
 					continue
 				}
 
@@ -255,4 +214,82 @@ func addPlayedVideo(videoPath string) {
 	}
 
 	playedVideos = append(playedVideos, videoPath)
+}
+
+var bannedWords = []string{
+	"porn",
+	"nude",
+	"sexually",
+	"shit",
+	"damn",
+	"hell",
+	"kill",
+	"murder",
+	"hit",
+	"fight",
+	"cocaine",
+	"weed",
+	"meth",
+	"idiot",
+	"stupid",
+	"dumb",
+	"suicide",
+	"abuse",
+	"trauma",
+	"rape",
+	"ass",
+	"fuck",
+	"suck",
+	"bitch",
+	"crap",
+	"puta",
+	"caralho",
+	"sex",
+	"disability",
+	"disabilities",
+	"disorder",
+	"disorders",
+	"aprendizagem",
+	"replace",
+	"replaced",
+	"replacing",
+	"replaces",
+	"substitua",
+	"substituir",
+	"substituindo",
+	"\"",
+	"“",
+	"”",
+	"’",
+	"‘",
+	"''",
+	"``",
+	"\\",
+	"!*",
+}
+
+// containsBannedWord checks the message for any banned words
+func containsBannedWord(message string) bool {
+	// Split the message into words
+	words := strings.FieldsFunc(message, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	})
+
+	// Check each word
+	for _, word := range words {
+		if isBannedWord(word) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isBannedWord(word string) bool {
+	for _, banned := range bannedWords {
+		if strings.EqualFold(word, banned) {
+			return true
+		}
+	}
+	return false
 }
