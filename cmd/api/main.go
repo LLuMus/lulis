@@ -42,10 +42,10 @@ const autoPlayRecurrentInterval = 2 * time.Minute
 const queuesThroughput = 3 * time.Second
 
 // restartInterval is a knob to control the interval between stream restarts, necessary because of FFMPEG CPU overhead on shared vCPUs
-const restartInterval = 5 * time.Hour
+const restartInterval = 7 * time.Hour
 
 // autoQuestionGenerationInterval is a knob to control the interval between automatic question generation
-const autoQuestionGenerationInterval = 8 * time.Minute
+const autoQuestionGenerationInterval = 60 * time.Minute
 
 var (
 	// mutex for thread-safe access to playedVideos
